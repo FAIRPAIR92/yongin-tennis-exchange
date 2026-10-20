@@ -1,0 +1,1860 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#08110E">
+<meta name="description" content="용인시 동호인 테니스 클럽 단체 교류전 — 대진표, 점수 입력, 실시간 순위">
+<title>홈 · 제2회 용인시 단체 교류전</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio, geometry.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* functional inline SVG icons opt into bounded geometry; content SVGs keep their own */
+  .od-icon { display: inline-block; inline-size: var(--od-icon-size, 1em); block-size: var(--od-icon-size, 1em); flex: none; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+
+:root{
+  --bg:#08110E;
+  --bg-elev:#0B1712;
+  --surface:#101E17;
+  --surface-2:#16281E;
+  --line:#22382C;
+  --line-soft:#1A2C22;
+  --text:#F2F6EF;
+  --text-muted:#9FB1A5;
+  --text-dim:#7C9184;
+  --lime:#D8F35B;
+  --lime-deep:#B6D137;
+  --clay:#FF8158;
+  --radius:16px;
+  --font-body:"Pretendard Variable",Pretendard,"Noto Sans KR","Malgun Gothic",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-display:"Black Han Sans","Pretendard Variable","Noto Sans KR",sans-serif;
+  --font-num:"Barlow Condensed","IBM Plex Mono",monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;min-height:100vh;background:var(--bg);color:var(--text);
+  font-family:var(--font-body);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;font-synthesis:none;
+}
+::selection{background:var(--lime);color:#08110E}
+a{color:inherit}
+button,input,select{font:inherit}
+button{cursor:pointer}
+strong,b{font-weight:600;font-synthesis:none}
+:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.od-icon{--od-icon-size:20px;vertical-align:-.15em}
+.nav-icon{--od-icon-size:22px}
+.icon-sm{--od-icon-size:16px}
+.icon-xs{--od-icon-size:14px}
+.empty-icon{--od-icon-size:24px;color:var(--text-dim)}
+h1,h2,h3,p,dl,dd{margin:0}
+h1[tabindex="-1"]:focus{outline:none}
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+.skip-link{
+  position:absolute;left:12px;top:-60px;z-index:100;background:var(--lime);color:#08110E;
+  padding:10px 16px;border-radius:8px;font-weight:700;text-decoration:none;transition:top .18s var(--ease);
+}
+.skip-link:focus{top:12px}
+
+/* shell */
+.app-shell{min-height:100vh}
+.sidebar{display:none}
+.main-col{min-width:0;display:flex;flex-direction:column;min-height:100vh}
+@media (min-width:1024px){
+  .app-shell{display:grid;grid-template-columns:264px minmax(0,1fr)}
+  .sidebar{
+    display:flex;flex-direction:column;gap:32px;padding:32px 20px;
+    border-right:1px solid var(--line);background:var(--bg-elev);
+    position:sticky;top:0;height:100vh;overflow-y:auto;
+  }
+}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;padding:0 8px}
+.brand-mark{
+  width:40px;height:40px;border-radius:12px;background:var(--lime);color:#08110E;
+  display:grid;place-items:center;font-family:var(--font-display);font-size:20px;line-height:1;flex:none;
+}
+.brand-text{min-width:0}
+.brand-title{display:block;font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.25;word-break:keep-all;overflow-wrap:anywhere}
+.brand-sub{display:block;font-family:var(--font-num);font-size:11px;letter-spacing:.14em;color:var(--text-dim);margin-top:2px}
+.side-nav{display:flex;flex-direction:column;gap:4px}
+.nav-item{
+  display:flex;align-items:center;gap:12px;min-height:46px;padding:0 12px;border-radius:10px;
+  color:var(--text-muted);text-decoration:none;font-weight:600;font-size:15px;transition:background .18s,color .18s;
+}
+.nav-item[aria-current="page"]{background:var(--surface-2);color:var(--lime)}
+.side-foot{margin-top:auto;padding:0 8px 8px;display:flex;flex-direction:column;gap:8px}
+.side-foot-label{font-family:var(--font-num);font-size:10px;letter-spacing:.16em;color:var(--text-dim)}
+.side-foot-title{font-size:14px;font-weight:700;line-height:1.4}
+.side-foot-meta{font-size:12px;color:var(--text-muted);line-height:1.6}
+
+.topbar{
+  position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg);
+}
+.main-col .topbar{background:var(--bg)}
+@media (min-width:1024px){.topbar{padding:16px 40px;background:var(--bg)}}
+.topbar-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;min-width:0}
+.brand-mark-sm{width:32px;height:32px;border-radius:9px;background:var(--lime);color:#08110E;display:grid;place-items:center;font-family:var(--font-display);font-size:16px;flex:none}
+.topbar-brand-name{font-size:15px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.topbar-title{display:none;font-size:14px;font-weight:700;color:var(--text-muted)}
+.topbar-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+@media (min-width:1024px){.topbar-brand{display:none}.topbar-title{display:block}}
+@media (max-width:639px){.topbar-cta{display:none}}
+
+main{
+  width:100%;max-width:1280px;margin:0 auto;flex:1;
+  padding:20px 16px calc(96px + env(safe-area-inset-bottom));
+}
+@media (min-width:1024px){main{padding:32px 40px 72px}}
+@media (min-width:1440px){main{padding-left:56px;padding-right:56px}}
+
+.bottom-nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  background:var(--bg-elev);border-top:1px solid var(--line);
+  padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+}
+@media (min-width:1024px){.bottom-nav{display:none}}
+.bottom-item{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  min-height:54px;border-radius:10px;color:var(--text-dim);text-decoration:none;font-size:11px;font-weight:700;
+  transition:color .18s,background .18s;
+}
+.bottom-item[aria-current="page"]{color:var(--lime);background:var(--surface)}
+
+/* typography helpers */
+.eyebrow{
+  font-family:var(--font-num);font-size:12px;font-weight:600;letter-spacing:.16em;
+  color:var(--lime);text-transform:uppercase;
+}
+.view-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin:4px 0 20px}
+.page-title{
+  font-family:var(--font-display);font-size:clamp(30px,4.4vw,44px);line-height:1.12;
+  letter-spacing:-.02em;margin-top:4px;
+}
+.view-sub{font-size:14px;color:var(--text-muted);margin-top:6px;max-width:56ch}
+.section-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin:32px 0 14px}
+.section-head h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.section-sub{font-size:13px;color:var(--text-muted);margin-top:2px}
+
+/* buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;
+  border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;
+  transition:background .18s,border-color .18s,color .18s,transform .18s;
+}
+.btn-lime{background:var(--lime);border-color:var(--lime);color:#08110E}
+.btn-ghost{background:transparent}
+.btn-danger{background:var(--clay);border-color:var(--clay);color:#200D06}
+.btn-sm{padding:0 14px;font-size:13px}
+@media (hover:hover){
+  .btn-lime:hover{background:#E6FF7C;border-color:#E6FF7C}
+  .btn-ghost:hover{background:var(--surface-2);border-color:var(--line)}
+  .btn-danger:hover{background:#FF9573;border-color:#FF9573}
+  .btn:hover{transform:translateY(-1px)}
+}
+.btn:active{transform:translateY(0)}
+.icon-btn{
+  width:44px;height:44px;display:inline-grid;place-items:center;flex:none;
+  border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text-muted);
+  transition:background .18s,color .18s,border-color .18s;
+}
+@media (hover:hover){.icon-btn:hover{background:var(--surface-2);color:var(--text);border-color:var(--line)}}
+
+/* team picker */
+.team-picker{position:relative;display:inline-flex;align-items:center}
+.team-picker select{
+  appearance:none;-webkit-appearance:none;min-height:44px;max-width:150px;
+  padding:0 34px 0 12px;border-radius:10px;border:1px solid var(--line);
+  background:var(--surface);color:var(--text);font-size:13px;font-weight:700;
+  text-overflow:ellipsis;cursor:pointer;
+}
+@media (min-width:1024px){.team-picker select{max-width:190px;font-size:14px}}
+.team-picker::after{
+  content:"";position:absolute;right:14px;top:calc(50% - 5px);width:7px;height:7px;
+  border-right:1.5px solid var(--text-muted);border-bottom:1.5px solid var(--text-muted);
+  transform:rotate(45deg);pointer-events:none;
+}
+.team-picker select:disabled{opacity:.55;cursor:not-allowed}
+
+/* switch */
+.switch{display:inline-flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;font-size:13px;font-weight:700;color:var(--text-muted);position:relative}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch-track{width:38px;height:22px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);position:relative;flex:none;transition:background .2s,border-color .2s}
+.switch-thumb{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--text-dim);top:2px;left:2px;transition:transform .2s var(--ease),background .2s}
+.switch input:checked + .switch-track{background:rgba(216,243,91,.16);border-color:var(--lime-deep)}
+.switch input:checked + .switch-track .switch-thumb{transform:translateX(16px);background:var(--lime)}
+.switch input:focus-visible + .switch-track{outline:2px solid var(--lime);outline-offset:2px}
+.switch input:disabled + .switch-track{opacity:.4}
+.switch:has(input:disabled){cursor:not-allowed;opacity:.6}
+
+/* hero */
+.hero{
+  position:relative;display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:24px;
+  border:1px solid var(--line);background:var(--bg-elev);border-radius:20px;padding:28px;overflow:hidden;
+}
+@media (max-width:900px){.hero{grid-template-columns:1fr;padding:22px;gap:20px}}
+@media (max-width:420px){.hero{padding:20px;border-radius:16px}}
+.hero-copy{min-width:0;display:flex;flex-direction:column;justify-content:center}
+.hero h1{
+  font-family:var(--font-display);font-size:clamp(30px,5vw,52px);line-height:1.06;
+  letter-spacing:-.02em;margin:6px 0 12px;word-break:keep-all;overflow-wrap:anywhere;
+}
+.hero-sub{font-size:15px;color:var(--text-muted);max-width:46ch;line-height:1.65}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{
+  display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;
+  border:1px solid var(--line);background:var(--surface);color:var(--text-muted);
+  font-size:12px;font-weight:700;white-space:nowrap;
+}
+.chip.lime{color:var(--lime);border-color:rgba(216,243,91,.28);background:rgba(216,243,91,.07)}
+.hero-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.hero-board{
+  position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:24px;
+  min-height:252px;border:1px solid var(--line);border-radius:16px;background:var(--surface);
+  padding:20px;overflow:hidden;
+}
+.court-art{
+  position:absolute;right:-36px;top:-24px;width:280px;height:auto;opacity:.2;
+  transform:rotate(-7deg);pointer-events:none;
+}
+.board-top{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:var(--font-num);font-size:11px;letter-spacing:.14em;color:var(--text-dim);text-transform:uppercase}
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--lime);margin-right:7px;box-shadow:0 0 0 4px rgba(216,243,91,.12);animation:pulse 2.4s infinite}
+.board-main{position:relative;z-index:1;display:flex;align-items:flex-end;gap:20px}
+.board-stat{min-width:0}
+.board-stat strong{display:block;font-family:var(--font-num);font-size:clamp(46px,6vw,68px);font-weight:600;line-height:.92;letter-spacing:-.02em}
+.board-cap{display:block;font-size:12px;font-weight:700;color:var(--text-muted);margin-top:6px}
+.board-divider{width:1px;height:46px;background:var(--line);margin-bottom:10px;flex:none}
+.board-progress{position:relative;z-index:1;display:flex;align-items:center;gap:12px}
+.board-progress .bar{flex:1;height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.board-progress .bar i{display:block;height:100%;width:0;border-radius:999px;background:var(--lime);transition:width .35s var(--ease)}
+.board-pct{font-family:var(--font-num);font-size:14px;font-weight:600;color:var(--text-muted);min-width:38px;text-align:right}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes flash{0%,100%{box-shadow:0 0 0 0 rgba(216,243,91,0)}30%{box-shadow:0 0 0 3px rgba(216,243,91,.45)}}
+
+/* round tabs */
+.round-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;max-width:100%}
+.round-tabs::-webkit-scrollbar{display:none}
+.round-tab{
+  flex:none;display:inline-flex;align-items:center;gap:5px;min-height:40px;padding:0 12px;
+  border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text-muted);
+  font-weight:600;font-size:14px;letter-spacing:-.01em;transition:background .18s,color .18s,border-color .18s;
+}
+.round-tab .tab-time{font-family:var(--font-num);font-size:11px;font-weight:500;opacity:.72}
+.round-tab[aria-pressed="true"]{background:var(--lime);border-color:var(--lime);color:#08110E}
+.round-tab[aria-pressed="true"] .tab-time{opacity:.7}
+/* court cards */
+.court-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:700px){.court-grid{grid-template-columns:1fr}}
+.court-card{
+  display:block;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:16px;text-decoration:none;color:inherit;transition:border-color .2s,transform .2s,background .2s;
+}
+@media (hover:hover){.court-card:hover{border-color:rgba(216,243,91,.42);transform:translateY(-2px);background:var(--surface-2)}}
+.court-card-head{display:flex;align-items:center;gap:8px;min-width:0}
+.court-badge{
+  display:inline-grid;place-items:center;width:28px;height:28px;flex:none;border-radius:8px;
+  border:1px solid var(--line);background:var(--surface-2);color:var(--lime);
+  font-family:var(--font-num);font-size:16px;font-weight:700;line-height:1;
+}
+.type-chip{
+  display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:999px;
+  border:1px solid rgba(216,243,91,.22);background:rgba(216,243,91,.08);
+  color:var(--lime);font-size:11px;font-weight:600;white-space:nowrap;
+}
+.state{display:inline-flex;align-items:center;gap:5px;margin-left:auto;font-size:11px;font-weight:600;white-space:nowrap}
+.state-dot{width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;flex:none}
+.state.done{color:var(--lime)}
+.state.partial{color:var(--clay)}
+.state.empty{color:var(--text-dim)}
+.scoreline{display:flex;flex-direction:column;margin-top:10px}
+.scoreline-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;
+  padding:7px 0;border-top:1px solid var(--line-soft);min-width:0;
+}
+.scoreline-row:first-child{border-top:0}
+.scoreline-team{min-width:0}
+.team-name{display:block;font-size:14px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}
+.team-players{display:block;font-size:11px;color:var(--text-dim);line-height:1.45;margin-top:2px;overflow-wrap:anywhere}
+.line-score{
+  font-family:var(--font-num);font-size:27px;font-weight:600;line-height:1;
+  color:var(--text-muted);min-width:24px;text-align:right;white-space:nowrap;
+}
+.scoreline-row.is-winner .team-name{color:var(--lime)}
+.scoreline-row.is-winner .line-score{color:var(--text)}
+.court-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft);font-size:11px;font-weight:700;color:var(--text-dim)}
+.card-go{display:inline-flex;align-items:center;gap:2px;color:var(--text-muted)}
+
+/* home grid */
+.home-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+@media (max-width:900px){.home-grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.panel-head h2{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.panel-link{display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--text-muted);text-decoration:none;min-height:44px;padding:0 4px}
+@media (hover:hover){.panel-link:hover{color:var(--lime)}}
+.empty-state{
+  display:flex;flex-direction:column;align-items:flex-start;gap:10px;
+  border:1px dashed var(--line);border-radius:12px;padding:18px;background:var(--bg-elev);
+}
+.empty-state p{font-size:13px;color:var(--text-muted);max-width:42ch}
+.empty-state.wide{grid-column:1/-1}
+.empty-note{border:1px dashed var(--line);border-radius:12px;padding:16px;font-size:13px;color:var(--text-muted)}
+
+.my-team-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;min-width:0}
+.rank-badge{
+  width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:12px;
+  border:1px solid var(--line);background:var(--bg-elev);color:var(--lime);
+  font-family:var(--font-num);font-size:26px;font-weight:700;line-height:1;
+}
+.my-team-name{display:block;font-size:17px;font-weight:700;overflow-wrap:anywhere;line-height:1.3}
+.my-team-meta{display:block;font-size:12px;color:var(--text-muted);margin-top:2px}
+.next-match{border:1px solid var(--line);border-radius:12px;background:var(--bg-elev);padding:14px;min-width:0}
+.next-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.next-label{font-family:var(--font-num);font-size:10px;font-weight:600;letter-spacing:.16em;color:var(--text-dim)}
+.next-matchup{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:15px;font-weight:700;min-width:0}
+.next-matchup .vs{font-family:var(--font-num);font-size:12px;font-weight:500;color:var(--text-dim);padding:0 2px}
+.next-meta{font-size:12px;color:var(--text-muted);margin-top:6px}
+.next-match .btn{margin-top:12px}
+
+.result-row{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;
+  padding:10px 0;border-top:1px solid var(--line-soft);min-width:0;
+}
+.result-row:first-child{border-top:0}
+.result-meta{font-family:var(--font-num);font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--text-dim);white-space:nowrap}
+.result-teams{font-size:13px;font-weight:700;line-height:1.5;min-width:0;overflow-wrap:anywhere}
+.result-teams .win{color:var(--lime)}
+.result-teams .vs{color:var(--text-dim);font-weight:500;padding:0 3px}
+.result-score{font-family:var(--font-num);font-size:20px;font-weight:600;color:var(--text);white-space:nowrap}
+.result-score span{color:var(--text-dim);padding:0 2px;font-size:15px}
+
+/* schedule */
+.round-panel{display:none}
+.round-panel.is-active{display:block}
+.round-head{display:flex;align-items:center;gap:10px;margin:16px 0 12px}
+.round-badge{
+  display:inline-grid;place-items:center;min-width:44px;height:32px;padding:0 8px;border-radius:8px;
+  border:1px solid rgba(216,243,91,.32);background:rgba(216,243,91,.1);color:var(--lime);
+  font-family:var(--font-num);font-size:17px;font-weight:700;line-height:1;
+}
+.round-time{font-family:var(--font-num);font-size:13px;color:var(--text-muted)}
+.round-meta{margin-left:auto;font-size:12px;font-weight:700;color:var(--text-dim)}
+.strip-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:820px){.strip-grid{grid-template-columns:1fr}}
+.match-strip{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.strip-head{display:flex;align-items:center;gap:8px;min-width:0}
+.strip-time{font-family:var(--font-num);font-size:12px;color:var(--text-dim);margin-left:2px}
+.strip-head .state{margin-left:auto}
+.view-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+
+/* record */
+.record-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.record-progress{display:flex;align-items:center;gap:10px;flex:1;min-width:160px}
+.mini-bar{flex:1;height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.mini-bar i{display:block;height:100%;width:0;border-radius:999px;background:var(--lime);transition:width .3s var(--ease)}
+.progress-text{font-family:var(--font-num);font-size:13px;font-weight:600;color:var(--text-muted);white-space:nowrap}
+.record-banner{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;
+  border:1px solid rgba(216,243,91,.24);background:rgba(216,243,91,.07);border-radius:10px;
+  padding:8px 12px;margin-bottom:14px;font-size:12px;font-weight:700;color:var(--text);
+}
+.record-banner button{border:0;background:transparent;color:var(--lime);font-weight:700;font-size:12px;min-height:44px;padding:0 4px;text-decoration:underline;text-underline-offset:3px}
+.score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:860px){.score-grid{grid-template-columns:1fr}}
+.score-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;
+  min-width:0;transition:border-color .2s,box-shadow .2s;
+}
+.score-card.is-complete{border-color:rgba(216,243,91,.32)}
+.score-card.flash{animation:flash 1.4s var(--ease)}
+.score-card-head{display:flex;align-items:center;gap:8px;min-width:0;margin-bottom:8px}
+.score-time{font-family:var(--font-num);font-size:12px;color:var(--text-dim)}
+.score-card-head .state{margin-left:auto}
+.entry-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;
+  padding:10px 0;border-top:1px solid var(--line-soft);min-width:0;
+}
+.entry-row:first-of-type{border-top:0;padding-top:4px}
+.entry-team{min-width:0}
+.entry-name-row{display:flex;align-items:center;gap:6px;min-width:0}
+.entry-name-row .team-name{min-width:0}
+.winner-flag{
+  display:inline-flex;align-items:center;justify-content:center;flex:none;
+  min-width:20px;height:20px;padding:0 5px;border-radius:6px;
+  background:var(--lime);color:#08110E;font-size:10px;font-weight:700;line-height:1;
+}
+.entry-row.is-winner .team-name{color:var(--lime)}
+.stepper{display:flex;align-items:center;gap:3px;background:var(--bg-elev);border:1px solid var(--line);border-radius:10px;padding:3px;flex:none}
+.step-btn{
+  width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:8px;
+  background:transparent;color:var(--text);font-size:22px;font-weight:500;line-height:1;
+  transition:background .15s,color .15s;
+}
+@media (hover:hover){.step-btn:hover{background:var(--surface-2);color:var(--lime)}}
+.step-btn:active{background:var(--surface-2)}
+.stepper input{
+  width:46px;height:44px;border:0;background:transparent;color:var(--text);
+  text-align:center;font-family:var(--font-num);font-size:27px;font-weight:600;line-height:1;
+  padding:0;appearance:textfield;-moz-appearance:textfield;
+}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.stepper input::placeholder{color:var(--text-dim)}
+.record-note{display:flex;align-items:center;gap:6px;margin-top:14px;font-size:12px;color:var(--text-dim)}
+
+/* standings */
+.table-wrap{display:block;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow-x:auto}
+.standings{width:100%;min-width:680px;border-collapse:collapse}
+.standings th{
+  padding:11px 10px;border-bottom:1px solid var(--line);
+  font-family:var(--font-num);font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--text-dim);
+  text-align:center;white-space:nowrap;
+}
+.standings td{padding:12px 10px;border-bottom:1px solid var(--line-soft);text-align:center;font-size:13px;color:var(--text-muted);white-space:nowrap}
+.standings tr:last-child td{border-bottom:0}
+.standings tbody tr{transition:background .18s}
+.standings .club-cell{cursor:default}
+.standings .club-cell{text-align:left;min-width:150px}
+.club-line{display:flex;align-items:center;gap:8px;min-width:0}
+.club-line .team-name{font-size:14px;color:var(--text)}
+.rank{font-family:var(--font-num);font-size:22px;font-weight:600;color:var(--text-muted);line-height:1}
+.rank-1 .rank{color:var(--lime)}
+.rank-2 .rank{color:#DCE6DF}
+.rank-3 .rank{color:var(--clay)}
+.pts{font-family:var(--font-num);font-size:19px;font-weight:600;color:var(--text)}
+.is-mine-row{background:rgba(216,243,91,.055)}
+.my-chip{
+  display:inline-flex;align-items:center;min-height:18px;padding:0 6px;border-radius:5px;
+  background:var(--lime);color:#08110E;font-size:9px;font-weight:700;letter-spacing:.01em;white-space:nowrap;
+}
+.form{display:inline-flex;gap:4px;justify-content:center}
+.f{
+  width:20px;height:20px;display:inline-grid;place-items:center;border-radius:6px;
+  font-family:var(--font-num);font-size:10px;font-weight:700;line-height:1;
+}
+.f.w{background:var(--lime);color:#08110E}
+.f.d{background:var(--surface-2);color:var(--text-muted);border:1px solid var(--line)}
+.f.l{background:rgba(255,129,88,.18);color:var(--clay);border:1px solid rgba(255,129,88,.3)}
+.form-empty{font-size:11px;color:var(--text-dim)}
+.standings-cards{display:none;gap:8px}
+@media (max-width:820px){
+  .table-wrap{display:none}
+  .standings-cards{display:grid}
+}
+.standing-card{
+  display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:12px;
+  background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px 14px;min-width:0;
+}
+.standing-card.is-mine{border-color:rgba(216,243,91,.42)}
+.standing-main{min-width:0}
+.standing-name{display:flex;align-items:center;gap:6px;min-width:0}
+.standing-meta{display:block;font-size:11px;color:var(--text-muted);margin-top:2px}
+.standing-side{text-align:right}
+.standing-side strong{display:block;font-family:var(--font-num);font-size:24px;font-weight:600;line-height:1;color:var(--text)}
+.standing-side span{display:block;font-size:10px;color:var(--text-dim);margin-top:2px}
+.standings-note{display:flex;align-items:flex-start;gap:8px;margin-top:14px;font-size:12px;color:var(--text-dim);line-height:1.6}
+
+/* admin */
+.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:700px){.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{background:var(--bg-elev);border:1px solid var(--line);border-radius:12px;padding:14px}
+.stat strong{display:block;font-family:var(--font-num);font-size:34px;font-weight:600;line-height:1;letter-spacing:-.01em}
+.stat span{display:block;font-size:11px;font-weight:700;color:var(--text-muted);margin-top:6px}
+.admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+@media (max-width:900px){.admin-grid{grid-template-columns:1fr}}
+.round-progress-list{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.rp-row{display:grid;grid-template-columns:44px minmax(0,1fr) 48px;align-items:center;gap:10px}
+.rp-label{font-family:var(--font-num);font-size:14px;font-weight:600;color:var(--text-muted)}
+.rp-count{font-family:var(--font-num);font-size:12px;color:var(--text-dim);text-align:right}
+.club-link-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line-soft);min-width:0}
+.club-link-row:first-child{border-top:0}
+.club-link-main{flex:1;min-width:0}
+.club-link-name{display:block;font-size:14px;font-weight:700;line-height:1.35}
+.club-link-url{display:block;font-family:var(--font-num);font-size:11px;letter-spacing:.02em;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.data-actions{display:flex;flex-wrap:wrap;gap:8px}
+.danger-zone{margin-top:18px;padding:14px;border:1px solid rgba(255,129,88,.34);border-radius:12px;background:rgba(255,129,88,.05)}
+.danger-zone h3{font-size:14px;font-weight:700;color:var(--clay)}
+.danger-zone p{font-size:12px;color:var(--text-muted);margin:4px 0 12px;max-width:48ch}
+.admin-note{font-size:12px;color:var(--text-dim);margin-top:12px;line-height:1.6}
+
+/* dialog */
+.dialog{
+  border:1px solid var(--line);background:var(--surface);color:var(--text);
+  border-radius:16px;padding:20px;max-width:460px;width:calc(100vw - 32px);
+  max-height:calc(100vh - 48px);overflow-y:auto;
+}
+.dialog::backdrop{background:rgba(3,8,6,.74)}
+.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.dialog-head h2{font-size:19px;font-weight:700}
+.dialog-body{font-size:14px;color:var(--text-muted);line-height:1.65}
+.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.dialog-actions form{display:contents}
+.rules-list{display:flex;flex-direction:column;gap:0;margin-top:8px}
+.rule-item{display:grid;grid-template-columns:104px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px solid var(--line-soft);font-size:13px}
+.rule-item:first-child{border-top:0}
+.rule-label{font-weight:700;color:var(--text)}
+.rule-value{color:var(--text-muted);line-height:1.55}
+
+/* toast */
+.toast{
+  position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));z-index:70;
+  transform:translate(-50%,12px);opacity:0;pointer-events:none;
+  background:var(--lime);color:#08110E;font-size:13px;font-weight:700;
+  padding:10px 16px;border-radius:10px;max-width:calc(100vw - 32px);text-align:center;
+  transition:opacity .2s var(--ease),transform .2s var(--ease);
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (min-width:1024px){.toast{bottom:32px}}
+
+.print-head{display:none}
+
+/* motion preferences */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+
+/* print: bracket sheet only */
+@media print{
+  @page{size:A3 landscape;margin:10mm}
+  body{background:#fff;color:#000;font-size:11pt}
+  .sidebar,.topbar,.bottom-nav,.toast,.view:not(#view-schedule),.round-tabs,.view-actions,.record-toolbar,.record-note{display:none!important}
+  #view-schedule,#view-schedule[hidden]{display:block!important}
+  main{padding:0;max-width:none}
+  .print-head{display:block;margin-bottom:12px;border-bottom:3px solid #000;padding-bottom:8px}
+  .print-head h1{font-family:var(--font-display);font-size:28px;color:#000;line-height:1.2}
+  .print-head p{font-size:10pt;color:#333;margin-top:4px}
+  .round-panel{display:block!important;break-inside:avoid;margin-bottom:12px}
+  .round-head{margin:8px 0}
+  .round-badge{background:#fff;border:1px solid #000;color:#000}
+  .round-time,.round-meta{color:#333}
+  .strip-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .match-strip{background:#fff;border:1px solid #888;border-radius:0;color:#000;break-inside:avoid;padding:8px 10px}
+  .type-chip{background:#fff;border:1px solid #888;color:#000}
+  .court-badge{background:#fff;border:1px solid #000;color:#000}
+  .team-name,.line-score,.strip-time{color:#000}
+  .team-players{color:#333}
+  .state{color:#000}
+  .state-dot{display:none}
+  .scoreline-row{border-top-color:#ccc}
+  .is-winner .team-name{color:#000;text-decoration:underline}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">본문으로 건너뛰기</a>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#home" aria-label="제2회 용인시 단체 교류전 홈">
+      <span class="brand-mark" aria-hidden="true">용</span>
+      <span class="brand-text">
+        <span class="brand-title">제2회 용인시 단체 교류전</span>
+        <span class="brand-sub">YONGIN CLUB EXCHANGE</span>
+      </span>
+    </a>
+    <nav class="side-nav" id="sideNav" aria-label="주 메뉴"></nav>
+    <div class="side-foot">
+      <span class="side-foot-label">EVENT</span>
+      <span class="side-foot-title">19:00 – 24:00<br>베스트 실외 4코트</span>
+      <span class="side-foot-meta">5개 클럽 · 6라운드 · 25경기<br>승 +1 / 무 0 / 패 -1</span>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <header class="topbar">
+      <a class="topbar-brand" href="#home" aria-label="제2회 용인시 단체 교류전 홈">
+        <span class="brand-mark-sm" aria-hidden="true">용</span>
+        <span class="topbar-brand-name">제2회 용인시 단체 교류전</span>
+      </a>
+      <span class="topbar-title" id="pageTitle">홈</span>
+      <div class="topbar-actions">
+        <label class="team-picker">
+          <span class="sr-only">내 팀 선택</span>
+          <select id="teamSelect"></select>
+        </label>
+        <button type="button" class="btn btn-ghost btn-sm topbar-cta" data-route="record">점수 입력</button>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <section class="view" id="view-home">
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">제2회 용인시 단체 교류전</p>
+            <h1 tabindex="-1">제2회 용인시 단체 교류전</h1>
+            <p class="hero-sub">5개 클럽이 4개 코트에서 맞붙는 단체 교류전. 라운드별 대진과 스코어를 한 화면에서 확인하고, 현장에서 바로 기록하세요.</p>
+            <div class="chip-row">
+              <span class="chip lime">19:00 – 24:00</span>
+              <span class="chip">베스트 실외 4코트</span>
+              <span class="chip">5개 클럽 · 25경기</span>
+            </div>
+            <div class="hero-actions">
+              <button type="button" class="btn btn-lime" data-route="record">점수 입력</button>
+              <button type="button" class="btn btn-ghost" data-route="schedule">대진표 보기</button>
+            </div>
+          </div>
+          <div class="hero-board">
+            <svg class="court-art" viewBox="0 0 320 200" aria-hidden="true" focusable="false">
+              <g fill="none" stroke="#D8F35B" stroke-width="2">
+                <rect x="10" y="10" width="300" height="180" rx="2"></rect>
+                <path d="M10 44h300M10 156h300"></path>
+                <path d="M160 10v180"></path>
+                <path d="M100 44v112M220 44v112"></path>
+                <path d="M100 78h120M100 122h120"></path>
+              </g>
+            </svg>
+            <div class="board-top">
+              <span><i class="live-dot" aria-hidden="true"></i>Live board</span>
+              <span id="heroStatus">시작 전</span>
+            </div>
+            <div class="board-main">
+              <div class="board-stat">
+                <strong id="statDone">0</strong>
+                <span class="board-cap">완료 경기</span>
+              </div>
+              <div class="board-divider" aria-hidden="true"></div>
+              <div class="board-stat">
+                <strong id="statLeft">25</strong>
+                <span class="board-cap">남은 경기</span>
+              </div>
+            </div>
+            <div class="board-progress">
+              <div class="bar"><i id="heroBar"></i></div>
+              <span class="board-pct" id="statPct">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-head">
+          <div>
+            <h2>지금 코트</h2>
+            <p class="section-sub">라운드를 골라 코트별 스코어를 확인하세요.</p>
+          </div>
+          <div class="round-tabs" id="homeRoundChips" aria-label="홈 라운드 선택"></div>
+        </div>
+        <div class="court-grid" id="homeCourts"></div>
+
+        <div class="home-grid">
+          <section class="panel" id="myTeamPanel" aria-label="내 팀"></section>
+          <section class="panel" id="recentPanel" aria-label="최근 결과"></section>
+        </div>
+      </section>
+
+      <section class="view" id="view-schedule" hidden>
+        <div class="view-head">
+          <div>
+            <p class="eyebrow">Match schedule</p>
+            <h1 class="page-title" tabindex="-1">대진표</h1>
+            <p class="view-sub">라운드별 코트 배정과 출전 선수, 진행 상황을 확인하세요.</p>
+          </div>
+          <div class="view-actions">
+            <label class="switch">
+              <input type="checkbox" id="scheduleOnlyMine">
+              <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+              <span>내 팀만</span>
+            </label>
+            <button type="button" class="btn btn-ghost" id="printBtn">인쇄</button>
+          </div>
+        </div>
+        <div class="print-head">
+          <h1>용인시 동호인 테니스 클럽 단체 교류전</h1>
+          <p>대진표 · 5개 클럽 · 4코트 · 6라운드 · 19:00–24:00 · 베스트 실외 4코트 · 6게임 1세트(5:5 TB, 노에드) · 승 +1 / 무 0 / 패 -1</p>
+        </div>
+        <div class="round-tabs" id="scheduleTabs" aria-label="대진표 라운드 선택"></div>
+        <div id="scheduleRounds"></div>
+      </section>
+
+      <section class="view" id="view-record" hidden>
+        <div class="view-head">
+          <div>
+            <p class="eyebrow">Score entry</p>
+            <h1 class="page-title" tabindex="-1">점수 기록</h1>
+            <p class="view-sub">점수를 누르면 즉시 저장됩니다. 라운드별로 코트 스코어를 입력하세요.</p>
+          </div>
+          <div class="view-actions">
+            <label class="switch">
+              <input type="checkbox" id="recordOnlyMine">
+              <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+              <span>내 팀만</span>
+            </label>
+          </div>
+        </div>
+        <div class="round-tabs" id="recordTabs" aria-label="기록 라운드 선택"></div>
+        <div class="record-toolbar">
+          <div class="record-progress">
+            <div class="mini-bar"><i id="recordProgressBar"></i></div>
+            <span class="progress-text" id="recordProgressText">0/4 완료</span>
+          </div>
+        </div>
+        <div class="record-banner" id="recordBanner" hidden></div>
+        <div class="score-grid" id="scoreGrid"></div>
+        <p class="record-note">
+          <svg class="od-icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+          입력 즉시 이 브라우저에 자동 저장됩니다. 관리자 화면에서 JSON으로 백업할 수 있습니다.
+        </p>
+      </section>
+
+      <section class="view" id="view-standings" hidden>
+        <div class="view-head">
+          <div>
+            <p class="eyebrow">Standings</p>
+            <h1 class="page-title" tabindex="-1">순위</h1>
+            <p class="view-sub">승점 · 득실 · 최근 흐름을 한눈에. 동률은 승자승 → 득실차 → 다득점 순으로 정합니다.</p>
+          </div>
+          <div class="view-actions">
+            <button type="button" class="icon-btn" id="rulesBtn" aria-label="경기 규칙과 순위 기준 보기">
+              <svg class="od-icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="standings">
+            <thead>
+              <tr>
+                <th scope="col">순위</th>
+                <th scope="col" class="club-cell">클럽</th>
+                <th scope="col">경기</th>
+                <th scope="col">승</th>
+                <th scope="col">무</th>
+                <th scope="col">패</th>
+                <th scope="col">득</th>
+                <th scope="col">실</th>
+                <th scope="col">득실</th>
+                <th scope="col">승점</th>
+                <th scope="col">최근 5</th>
+              </tr>
+            </thead>
+            <tbody id="standingsBody"></tbody>
+          </table>
+        </div>
+        <div class="standings-cards" id="standingsCards"></div>
+        <p class="standings-note">
+          <svg class="od-icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+          승 +1 / 무 0 / 패 -1. 미입력 경기는 순위 계산에서 제외됩니다.
+        </p>
+      </section>
+
+      <section class="view" id="view-admin" hidden>
+        <div class="view-head">
+          <div>
+            <p class="eyebrow">Operations</p>
+            <h1 class="page-title" tabindex="-1">운영 관리</h1>
+            <p class="view-sub">진행 현황을 확인하고, 클럽별 입력 링크와 데이터 백업을 관리하세요.</p>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat"><strong id="adminDone">0</strong><span>완료 경기</span></div>
+          <div class="stat"><strong id="adminPending">25</strong><span>미입력 경기</span></div>
+          <div class="stat"><strong id="adminClubs">5</strong><span>참가 클럽</span></div>
+          <div class="stat"><strong id="adminPct">0%</strong><span>진행률</span></div>
+        </div>
+
+        <div class="admin-grid">
+          <section class="panel">
+            <div class="panel-head"><h2>라운드 진행 현황</h2></div>
+            <div class="round-progress-list" id="roundProgress"></div>
+            <p class="admin-note">경기 결과는 입력 즉시 순위에 반영됩니다. 미입력 경기는 0점이 아니라 집계 제외입니다.</p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head"><h2>클럽별 입력 링크</h2></div>
+            <p class="admin-note" style="margin:0 0 8px">링크를 열면 해당 클럽 경기만 먼저 보이도록 필터됩니다. 클럽장에게 전달하세요.</p>
+            <div id="clubLinks"></div>
+          </section>
+        </div>
+
+        <div class="admin-grid">
+          <section class="panel">
+            <div class="panel-head"><h2>데이터 백업</h2></div>
+            <p class="admin-note" style="margin:0 0 12px">기록은 이 브라우저에 저장됩니다. 대회 전후로 JSON 파일을 내려받아 보관하세요.</p>
+            <div class="data-actions">
+              <button type="button" class="btn btn-lime" id="exportBtn">
+                <svg class="od-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"></path><path d="M4 20h16"></path></svg>
+                JSON 내보내기
+              </button>
+              <button type="button" class="btn btn-ghost" id="importBtn">
+                <svg class="od-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9M7 14l5-5 5 5"></path><path d="M4 4h16"></path></svg>
+                기록 가져오기
+              </button>
+              <input type="file" id="importFile" accept="application/json,.json" class="sr-only">
+            </div>
+            <div class="danger-zone">
+              <h3>전체 초기화</h3>
+              <p>모든 경기 점수를 지웁니다. 되돌릴 수 없으므로 먼저 JSON으로 백업하세요.</p>
+              <button type="button" class="btn btn-danger" id="resetAll">모든 점수 초기화</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head"><h2>현장 운영 팁</h2></div>
+            <div class="rules-list">
+              <div class="rule-item"><span class="rule-label">경기 시간</span><span class="rule-value">40분 (35분 경기 + 5분 교대). 경기 5분 전 해당 코트 뒤 대기.</span></div>
+              <div class="rule-item"><span class="rule-label">경기 방식</span><span class="rule-value">6게임 1세트, 5:5 타이브레이크, 노에드.</span></div>
+              <div class="rule-item"><span class="rule-label">승점</span><span class="rule-value">승 +1 / 무 0 / 패 -1.</span></div>
+              <div class="rule-item"><span class="rule-label">동률</span><span class="rule-value">승자승 → 득실차 → 다득점.</span></div>
+              <div class="rule-item"><span class="rule-label">관리자</span><span class="rule-value">이 화면은 인증 없이 열리는 현장 운영용 도구입니다. 공용 기기에서는 사용 후 기록을 백업하고 초기화하세요.</span></div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" id="bottomNav" aria-label="모바일 메뉴"></nav>
+  </div>
+</div>
+
+<dialog id="rulesDialog" class="dialog" aria-labelledby="rulesTitle">
+  <div class="dialog-head">
+    <h2 id="rulesTitle">경기 규칙 · 순위 기준</h2>
+    <form method="dialog">
+      <button class="icon-btn" value="close" aria-label="닫기">
+        <svg class="od-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+      </button>
+    </form>
+  </div>
+  <div class="rules-list">
+    <div class="rule-item"><span class="rule-label">경기 방식</span><span class="rule-value">6게임 1세트 · 5:5 타이브레이크 · 노에드</span></div>
+    <div class="rule-item"><span class="rule-label">시간 제한</span><span class="rule-value">40분 (35분 경기 + 5분 교대)</span></div>
+    <div class="rule-item"><span class="rule-label">승점</span><span class="rule-value">승 +1 / 무 0 / 패 -1</span></div>
+    <div class="rule-item"><span class="rule-label">동률 기준</span><span class="rule-value">승자승 → 득실차 → 다득점</span></div>
+    <div class="rule-item"><span class="rule-label">코트</span><span class="rule-value">A · B · C · D 4개 코트, 라운드당 4경기</span></div>
+    <div class="rule-item"><span class="rule-label">추가 경기</span><span class="rule-value">6라운드 종료 후 또는 가장 먼저 비는 코트에서 진행</span></div>
+  </div>
+  <div class="dialog-actions">
+    <form method="dialog"><button class="btn btn-lime" value="close">확인</button></form>
+  </div>
+</dialog>
+
+<dialog id="confirmDialog" class="dialog" aria-labelledby="confirmTitle">
+  <form method="dialog">
+    <div class="dialog-head"><h2 id="confirmTitle">확인</h2></div>
+    <p class="dialog-body" id="confirmBody"></p>
+    <div class="dialog-actions">
+      <button class="btn btn-ghost" value="cancel">취소</button>
+      <button class="btn btn-lime" id="confirmOk" value="confirm">확인</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+
+const CLUBS = ['22TENNIS', 'TETRIS', 'TEGUL-TEGUL', 'WAVY', 'WOLF DOG'];
+const SCORE_KEY = 'yongin-scores';
+const CLUB_KEY = 'yongin-exchange-club';
+
+function M(id, round, time, court, type, a, b, pa, pb) {
+  return { id, round, time, court, type, a, b, pa: pa || [], pb: pb || [] };
+}
+
+const CLUB_PLAYERS = {
+  '22TENNIS': ['손광석', '황경희', '이현주', '박지은', '김진우', '오대원', '임빛나', '홍선영'],
+  'TETRIS': ['태종', '동호', '리후', '은석', '윤구', '태영', '애뇽', '도리'],
+  'WAVY': ['김우천', '권오상', '이현종', '장인호', '유창화', '김진옥', '김경석', '전미령', '송미란', '최은영'],
+  'WOLF DOG': ['설지운', '전상민', '이예지', '최유리', '이형원', '최종윤', '홍은영', '이송경', '이승우', '유승용']
+};
+
+const MATCHES = [
+  M('R1A', '1R', '19:20', 'A', '남복', '22TENNIS', 'TETRIS', ['김인우', '오대원'], ['태종', '동호']),
+  M('R1B', '1R', '19:20', 'B', '남복', 'TEGUL-TEGUL', 'WAVY', ['이학수', '김기범'], ['김우천', '권오상']),
+  M('R1C', '1R', '19:20', 'C', '여복', '22TENNIS', 'TEGUL-TEGUL', ['홍선영', '임빛나'], ['김소현', '지연지']),
+  M('R1D', '1R', '19:20', 'D', '여복', 'TETRIS', 'WOLF DOG', ['애뇽', '도리'], ['최유리', '이유진']),
+
+  M('R2A', '2R', '20:00', 'A', '남복', 'TETRIS', 'TEGUL-TEGUL', ['리후', '은석'], ['김휘태', '권충건']),
+  M('R2B', '2R', '20:00', 'B', '남복', 'WAVY', 'WOLF DOG', ['이현종', '장인호'], ['설지운', '전상민']),
+  M('R2C', '2R', '20:00', 'C', '여복', '22TENNIS', 'WAVY', ['이현주', '박지은'], ['유창화', '김진옥']),
+  M('R2D', '2R', '20:00', 'D', '여복', 'TEGUL-TEGUL', 'WOLF DOG', ['유지원', '오지혜'], ['이예지', '최유리']),
+
+  M('R3A', '3R', '20:40', 'A', '남복', '22TENNIS', 'WOLF DOG', ['김진우', '손광석'], ['이형원', '최종윤']),
+  M('R3B', '3R', '20:40', 'B', '남복', 'TETRIS', 'WAVY', ['윤구', '동호'], ['김우천', '김경석']),
+  M('R3C', '3R', '20:40', 'C', '여복', '22TENNIS', 'TETRIS', ['홍선영', '이현주'], ['태영', '애뇽']),
+  M('R3D', '3R', '20:40', 'D', '여복', 'TEGUL-TEGUL', 'WAVY', ['김소현', '오지혜'], ['전미령', '송미란']),
+
+  M('R4A', '4R', '21:20', 'A', '혼복', '22TENNIS', 'TETRIS', ['오대원', '이현주'], ['도리', '리후']),
+  M('R4B', '4R', '21:20', 'B', '혼복', 'TEGUL-TEGUL', 'WAVY', ['김소현', '권충건'], ['이현종', '유창화']),
+  M('R4C', '4R', '21:20', 'C', '여복', 'TETRIS', 'TEGUL-TEGUL', ['태영', '애뇽'], ['지연지', '유지원']),
+  M('R4D', '4R', '21:20', 'D', '여복', 'WAVY', 'WOLF DOG', ['김진옥', '최은영'], ['홍은영', '이송경']),
+
+  M('R5A', '5R', '22:00', 'A', '남복', '22TENNIS', 'TEGUL-TEGUL', ['김진우', '황경희'], ['이학수', '김휘태']),
+  M('R5B', '5R', '22:00', 'B', '남복', 'TETRIS', 'WOLF DOG', ['윤구', '은석'], ['이승우', '유승용']),
+  M('R5C', '5R', '22:00', 'C', '혼복', 'TETRIS', 'TEGUL-TEGUL', ['태종', '태영'], ['김기범', '오지혜']),
+  M('R5D', '5R', '22:00', 'D', '혼복', 'WAVY', 'WOLF DOG', ['권오상', '전미령'], ['전상민', '이송경']),
+
+  M('R6A', '6R', '22:40', 'A', '남복', '22TENNIS', 'WAVY', ['오대원', '임빛나'], ['김경석', '장인호']),
+  M('R6B', '6R', '22:40', 'B', '남복', 'TEGUL-TEGUL', 'WOLF DOG', ['권충건', '김기범'], ['이형원', '유승용']),
+  M('R6C', '6R', '22:40', 'C', '여복', '22TENNIS', 'WOLF DOG', ['홍선영', '박지은'], ['이예지', '이유진']),
+  M('R6D', '6R', '22:40', 'D', '여복', 'TETRIS', 'WAVY', ['애뇽', '도리'], ['송미란', '최은영']),
+
+  M('EX1', '추가', '경기 후', 'E', '혼복', '22TENNIS', 'WOLF DOG', ['손광석', '김진우'], ['설지운', '홍은영'])
+];
+
+const ROUNDS = [
+  { key: '1R', name: '1라운드', time: '19:20' },
+  { key: '2R', name: '2라운드', time: '20:00' },
+  { key: '3R', name: '3라운드', time: '20:40' },
+  { key: '4R', name: '4라운드', time: '21:20' },
+  { key: '5R', name: '5라운드', time: '22:00' },
+  { key: '6R', name: '6라운드', time: '22:40' },
+  { key: '추가', name: '추가 경기', time: '경기 후' }
+];
+
+const ROUTES = ['home', 'schedule', 'record', 'standings', 'admin'];
+const ROUTE_TITLES = { home: '홈', schedule: '대진표', record: '점수 기록', standings: '순위', admin: '운영 관리' };
+const NAV = [
+  { route: 'home', label: '홈', icon: 'home' },
+  { route: 'schedule', label: '대진표', icon: 'calendar' },
+  { route: 'record', label: '기록', icon: 'pencil' },
+  { route: 'standings', label: '순위', icon: 'trophy' },
+  { route: 'admin', label: '관리', icon: 'sliders' }
+];
+
+const ICONS = {
+  home: '<path d="M3.5 10.8 12 3.5l8.5 7.3"/><path d="M5.5 9.6V20a1 1 0 0 0 1 1H10v-5.5h4V21h3.5a1 1 0 0 0 1-1V9.6"/>',
+  calendar: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>',
+  pencil: '<path d="M14.5 4.5 19.5 9.5 8 21H3v-5z"/><path d="m12.5 6.5 5 5"/>',
+  trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5.5H5V8a3 3 0 0 0 3 3M16 5.5h3V8a3 3 0 0 1-3 3"/><path d="M12 13v3M9 20h6M10 16h4v4h-4z"/>',
+  sliders: '<path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15.5" cy="7" r="2.2"/><circle cx="10.5" cy="17" r="2.2"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h9"/>',
+  reset: '<path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4.5V10h5.5"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  print: '<path d="M6.5 9V3.5h11V9"/><rect x="6.5" y="14" width="11" height="6.5" rx="1"/><path d="M6.5 17H4.5a2 2 0 0 1-2-2v-2.5a2 2 0 0 1 2-2h15a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2h-2"/>'
+};
+
+function icon(name, cls) {
+  const extra = cls ? ' ' + cls : '';
+  return '<svg class="od-icon' + extra + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
+}
+
+function $(sel, root) { return (root || document).querySelector(sel); }
+function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+function normScore(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < 0 || n > 9) return null;
+  return n;
+}
+
+function loadScores() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}');
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    const out = {};
+    Object.keys(raw).forEach(function (id) {
+      if (!MATCHES.some(function (m) { return m.id === id; })) return;
+      const v = raw[id];
+      if (!v || typeof v !== 'object') return;
+      const a = normScore(v.a);
+      const b = normScore(v.b);
+      if (a !== null || b !== null) out[id] = { a: a, b: b };
+    });
+    return out;
+  } catch (err) {
+    return {};
+  }
+}
+
+const params = new URLSearchParams(location.search);
+const rawUrlClub = params.get('club');
+const urlClub = CLUBS.indexOf(rawUrlClub || '') !== -1 ? rawUrlClub : '';
+const savedClub = localStorage.getItem(CLUB_KEY) || '';
+
+const state = {
+  scores: loadScores(),
+  club: urlClub || (CLUBS.indexOf(savedClub) !== -1 ? savedClub : ''),
+  homeRound: '1R',
+  scheduleRound: '1R',
+  recordRound: '1R',
+  scheduleOnlyMine: false,
+  recordOnlyMine: !!urlClub
+};
+
+function isComplete(id) {
+  const s = state.scores[id];
+  return !!s && s.a !== null && s.a !== undefined && s.b !== null && s.b !== undefined;
+}
+
+function matchScore(id) {
+  return state.scores[id] || { a: null, b: null };
+}
+
+function matchStatus(id) {
+  const s = state.scores[id];
+  if (!s) return 'empty';
+  const hasA = s.a !== null && s.a !== undefined;
+  const hasB = s.b !== null && s.b !== undefined;
+  if (!hasA && !hasB) return 'empty';
+  if (!hasA || !hasB) return 'partial';
+  return 'done';
+}
+
+function winnerOf(id) {
+  if (!isComplete(id)) return null;
+  const s = state.scores[id];
+  if (s.a > s.b) return 'a';
+  if (s.a < s.b) return 'b';
+  return 'draw';
+}
+
+function stateLabel(st) {
+  if (st === 'done') return '완료';
+  if (st === 'partial') return '입력 중';
+  return '미입력';
+}
+
+function saveScores() {
+  try { localStorage.setItem(SCORE_KEY, JSON.stringify(state.scores)); } catch (err) { /* storage may be unavailable */ }
+}
+
+function activeRound() {
+  const main = ROUNDS.filter(function (r) { return r.key !== '추가'; });
+  for (let i = 0; i < main.length; i++) {
+    const key = main[i].key;
+    if (MATCHES.some(function (m) { return m.round === key && !isComplete(m.id); })) return key;
+  }
+  return '추가';
+}
+
+function firstIncompleteRoundFor(club) {
+  for (let i = 0; i < ROUNDS.length; i++) {
+    const key = ROUNDS[i].key;
+    if (MATCHES.some(function (m) {
+      return m.round === key && (m.a === club || m.b === club) && !isComplete(m.id);
+    })) return key;
+  }
+  return '추가';
+}
+
+function roundMatches(key) {
+  return MATCHES.filter(function (m) { return m.round === key; });
+}
+
+function formatGd(v) {
+  if (v > 0) return '+' + v;
+  return String(v);
+}
+
+function computeStandings() {
+  const stats = {};
+  CLUBS.forEach(function (c) {
+    stats[c] = { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, form: [] };
+  });
+
+  MATCHES.forEach(function (m) {
+    if (!isComplete(m.id)) return;
+    const s = state.scores[m.id];
+    const A = stats[m.a];
+    const B = stats[m.b];
+    if (!A || !B) return;
+    A.p += 1; B.p += 1;
+    A.gf += s.a; A.ga += s.b;
+    B.gf += s.b; B.ga += s.a;
+    if (s.a > s.b) {
+      A.w += 1; B.l += 1; A.pts += 1; B.pts -= 1;
+      A.form.push('W'); B.form.push('L');
+    } else if (s.a < s.b) {
+      B.w += 1; A.l += 1; B.pts += 1; A.pts -= 1;
+      B.form.push('W'); A.form.push('L');
+    } else {
+      A.d += 1; B.d += 1;
+      A.form.push('D'); B.form.push('D');
+    }
+  });
+
+  let rows = CLUBS.map(function (c) {
+    const st = stats[c];
+    return {
+      club: c,
+      p: st.p, w: st.w, d: st.d, l: st.l,
+      gf: st.gf, ga: st.ga, gd: st.gf - st.ga, pts: st.pts,
+      form: st.form.slice(-5)
+    };
+  });
+
+  rows.sort(function (x, y) {
+    return y.pts - x.pts || y.gd - x.gd || y.gf - x.gf || x.club.localeCompare(y.club);
+  });
+
+  const ordered = [];
+  let i = 0;
+  while (i < rows.length) {
+    let j = i;
+    while (j + 1 < rows.length && rows[j + 1].pts === rows[i].pts) j += 1;
+    const group = rows.slice(i, j + 1);
+    if (group.length > 1) {
+      const inGroup = {};
+      group.forEach(function (r) { inGroup[r.club] = true; });
+      const h2h = {};
+      group.forEach(function (r) { h2h[r.club] = 0; });
+      MATCHES.forEach(function (m) {
+        if (!isComplete(m.id) || !inGroup[m.a] || !inGroup[m.b]) return;
+        const s = state.scores[m.id];
+        if (s.a > s.b) { h2h[m.a] += 1; h2h[m.b] -= 1; }
+        else if (s.a < s.b) { h2h[m.b] += 1; h2h[m.a] -= 1; }
+      });
+      group.sort(function (x, y) {
+        return (h2h[y.club] - h2h[x.club]) || (y.gd - x.gd) || (y.gf - x.gf) || x.club.localeCompare(y.club);
+      });
+    }
+    group.forEach(function (r) { ordered.push(r); });
+    i = j + 1;
+  }
+
+  return ordered.map(function (r, idx) {
+    return Object.assign({}, r, { rank: idx + 1 });
+  });
+}
+
+function roundChips(active, target, cls) {
+  return ROUNDS.map(function (r) {
+    return '<button type="button" class="round-tab' + (cls ? ' ' + cls : '') + '" data-round="' + r.key + '" data-round-for="' + target + '" aria-pressed="' + (r.key === active ? 'true' : 'false') + '">' +
+      r.key + '<span class="tab-time">' + r.time + '</span></button>';
+  }).join('');
+}
+
+function teamBlock(name, players) {
+  return '<span class="team-name">' + name + '</span>' +
+    (players && players.length ? '<span class="team-players">' + players.join(' · ') + '</span>' : '');
+}
+
+function courtCard(m) {
+  const s = matchScore(m.id);
+  const st = matchStatus(m.id);
+  const w = winnerOf(m.id);
+  const rows = [['a', m.a, m.pa, s.a], ['b', m.b, m.pb, s.b]].map(function (row) {
+    const side = row[0];
+    return '<div class="scoreline-row' + (w === side ? ' is-winner' : '') + '">' +
+      '<div class="scoreline-team">' + teamBlock(row[1], row[2]) + '</div>' +
+      '<span class="line-score">' + (row[3] === null || row[3] === undefined ? '–' : row[3]) + '</span>' +
+      '</div>';
+  }).join('');
+  return '<a class="court-card" href="#record" data-open-record="' + m.round + '" data-match-id="' + m.id + '">' +
+    '<div class="court-card-head">' +
+      '<span class="court-badge">' + m.court + '</span>' +
+      '<span class="type-chip">' + m.type + '</span>' +
+      '<span class="state ' + st + '"><i class="state-dot" aria-hidden="true"></i>' + stateLabel(st) + '</span>' +
+    '</div>' +
+    '<div class="scoreline">' + rows + '</div>' +
+    '<div class="court-card-foot"><span>' + m.round + ' · ' + m.time + '</span><span class="card-go">기록 ' + icon('arrow','icon-xs') + '</span></div>' +
+  '</a>';
+}
+
+function renderHome() {
+  $('#statDone').textContent = String(MATCHES.filter(function (m) { return isComplete(m.id); }).length);
+  const done = MATCHES.filter(function (m) { return isComplete(m.id); }).length;
+  const total = MATCHES.length;
+  const pct = Math.round((done / total) * 100);
+  $('#statLeft').textContent = String(total - done);
+  $('#statPct').textContent = pct + '%';
+  $('#heroBar').style.width = pct + '%';
+  $('#heroStatus').textContent = done === 0 ? '시작 전' : (done === total ? '종료' : '진행 중');
+
+  $('#homeRoundChips').innerHTML = roundChips(state.homeRound, 'home');
+  const list = roundMatches(state.homeRound);
+  $('#homeCourts').innerHTML = list.map(courtCard).join('');
+
+  renderMyTeam();
+  renderRecent();
+}
+
+function renderMyTeam() {
+  const el = $('#myTeamPanel');
+  if (!state.club) {
+    el.innerHTML = '<div class="panel-head"><h2>내 팀</h2><a class="panel-link" href="#standings">순위 ' + icon('arrow','icon-xs') + '</a></div>' +
+      '<div class="empty-state">' + icon('trophy','empty-icon') +
+      '<p>내 팀을 선택하면 다음 경기와 현재 순위가 여기에 표시됩니다.</p>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-focus-team>팀 선택하기</button>' +
+      '</div>';
+    return;
+  }
+
+  const rows = computeStandings();
+  const row = rows.find(function (r) { return r.club === state.club; });
+  const next = MATCHES.find(function (m) {
+    return (m.a === state.club || m.b === state.club) && !isComplete(m.id);
+  });
+
+  let nextHtml = '';
+  if (next) {
+    nextHtml = '<div class="next-match">' +
+      '<div class="next-top"><span class="next-label">Next match</span><span class="type-chip">' + next.type + '</span></div>' +
+      '<div class="next-matchup"><span class="team-name">' + next.a + '</span><span class="vs">vs</span><span class="team-name">' + next.b + '</span></div>' +
+      '<p class="next-meta">' + next.round + ' · ' + next.time + ' · 코트 ' + next.court + '</p>' +
+      '<button type="button" class="btn btn-lime btn-sm" data-open-record="' + next.round + '" data-match-id="' + next.id + '">점수 입력</button>' +
+      '</div>';
+  } else {
+    nextHtml = '<div class="next-match"><div class="next-top"><span class="next-label">Next match</span><span class="state done"><i class="state-dot" aria-hidden="true"></i>완료</span></div>' +
+      '<p class="next-meta" style="margin-top:8px">모든 경기가 입력되었습니다. 최종 순위를 확인하세요.</p>' +
+      '<a class="btn btn-ghost btn-sm" href="#standings" style="margin-top:12px">순위 보기</a></div>';
+  }
+
+  el.innerHTML = '<div class="panel-head"><h2>내 팀</h2><a class="panel-link" href="#standings">전체 순위 ' + icon('arrow','icon-xs') + '</a></div>' +
+    '<div class="my-team-top">' +
+      '<span class="rank-badge">' + row.rank + '</span>' +
+      '<div><span class="my-team-name">' + state.club + '</span>' +
+      '<span class="my-team-meta">' + row.pts + '점 · ' + row.w + '승 ' + row.d + '무 ' + row.l + '패 · 득실 ' + formatGd(row.gd) + '</span></div>' +
+    '</div>' + nextHtml;
+}
+
+function renderRecent() {
+  const el = $('#recentPanel');
+  const recent = MATCHES.filter(function (m) { return isComplete(m.id); }).slice(-6).reverse();
+  if (!recent.length) {
+    el.innerHTML = '<div class="panel-head"><h2>최근 결과</h2><a class="panel-link" href="#record">기록 ' + icon('arrow','icon-xs') + '</a></div>' +
+      '<div class="empty-state">' + icon('pencil','empty-icon') +
+      '<p>아직 입력된 결과가 없습니다. 첫 경기 스코어를 기록하면 여기에 표시됩니다.</p>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-route="record">첫 경기 입력</button>' +
+      '</div>';
+    return;
+  }
+
+  const rows = recent.map(function (m) {
+    const s = state.scores[m.id];
+    const w = winnerOf(m.id);
+    return '<div class="result-row">' +
+      '<span class="result-meta">' + m.round + ' · ' + m.court + '</span>' +
+      '<span class="result-teams"><span class="' + (w === 'a' ? 'win' : '') + '">' + m.a + '</span><span class="vs">vs</span><span class="' + (w === 'b' ? 'win' : '') + '">' + m.b + '</span></span>' +
+      '<span class="result-score">' + s.a + '<span>:</span>' + s.b + '</span>' +
+      '</div>';
+  }).join('');
+
+  el.innerHTML = '<div class="panel-head"><h2>최근 결과</h2><a class="panel-link" href="#record">기록 ' + icon('arrow','icon-xs') + '</a></div>' +
+    '<div>' + rows + '</div>';
+}
+
+function scheduleStrip(m) {
+  const s = matchScore(m.id);
+  const st = matchStatus(m.id);
+  const w = winnerOf(m.id);
+  const rows = [['a', m.a, m.pa, s.a], ['b', m.b, m.pb, s.b]].map(function (row) {
+    const side = row[0];
+    return '<div class="scoreline-row' + (w === side ? ' is-winner' : '') + '">' +
+      '<div class="scoreline-team">' + teamBlock(row[1], row[2]) + '</div>' +
+      '<span class="line-score">' + (row[3] === null || row[3] === undefined ? '–' : row[3]) + '</span>' +
+      '</div>';
+  }).join('');
+  return '<article class="match-strip">' +
+    '<div class="strip-head">' +
+      '<span class="court-badge">' + m.court + '</span>' +
+      '<span class="type-chip">' + m.type + '</span>' +
+      '<span class="strip-time">' + m.time + '</span>' +
+      '<span class="state ' + st + '"><i class="state-dot" aria-hidden="true"></i>' + stateLabel(st) + '</span>' +
+    '</div>' +
+    '<div class="scoreline">' + rows + '</div>' +
+  '</article>';
+}
+
+function renderSchedule() {
+  $('#scheduleTabs').innerHTML = roundChips(state.scheduleRound, 'schedule');
+  const wrap = $('#scheduleRounds');
+  wrap.innerHTML = ROUNDS.map(function (r) {
+    const all = roundMatches(r.key);
+    const filtered = (state.scheduleOnlyMine && state.club)
+      ? all.filter(function (m) { return m.a === state.club || m.b === state.club; })
+      : all;
+    const done = all.filter(function (m) { return isComplete(m.id); }).length;
+    const body = filtered.length
+      ? '<div class="strip-grid">' + filtered.map(scheduleStrip).join('') + '</div>'
+      : '<p class="empty-note">' + (state.club ? state.club + '의 이 라운드 경기가 없습니다.' : '이 라운드에 등록된 경기가 없습니다.') + '</p>';
+    return '<section class="round-panel' + (r.key === state.scheduleRound ? ' is-active' : '') + '" data-round-panel="' + r.key + '" role="tabpanel" aria-label="' + r.name + '">' +
+      '<div class="round-head"><span class="round-badge">' + r.key + '</span><span class="round-time">' + r.time + '</span><span class="round-meta">' + done + '/' + all.length + ' 완료</span></div>' +
+      body + '</section>';
+  }).join('');
+
+  const toggle = $('#scheduleOnlyMine');
+  toggle.disabled = !state.club;
+  toggle.checked = !!state.club && state.scheduleOnlyMine;
+}
+
+function scoreEntryCard(m) {
+  const s = matchScore(m.id);
+  const st = matchStatus(m.id);
+  const w = winnerOf(m.id);
+  const rows = [['a', m.a, m.pa, s.a], ['b', m.b, m.pb, s.b]].map(function (row) {
+    const side = row[0];
+    const name = row[1];
+    const players = row[2];
+    const val = row[3];
+    return '<div class="entry-row' + (w === side ? ' is-winner' : '') + '" data-team-row="' + side + '">' +
+      '<div class="entry-team">' +
+        '<div class="entry-name-row"><span class="team-name">' + name + '</span>' +
+        '<span class="winner-flag"' + (w === side ? '' : ' hidden') + '>승</span></div>' +
+        (players && players.length ? '<span class="team-players">' + players.join(' · ') + '</span>' : '') +
+      '</div>' +
+      '<div class="stepper">' +
+        '<button type="button" class="step-btn" data-step="-1" data-id="' + m.id + '" data-side="' + side + '" aria-label="' + name + ' 점수 1 감소">−</button>' +
+        '<input type="number" inputmode="numeric" min="0" max="9" step="1" value="' + (val === null || val === undefined ? '' : val) + '" data-score-input data-id="' + m.id + '" data-side="' + side + '" aria-label="' + name + ' 점수">' +
+        '<button type="button" class="step-btn" data-step="1" data-id="' + m.id + '" data-side="' + side + '" aria-label="' + name + ' 점수 1 증가">+</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  return '<article class="score-card' + (st === 'done' ? ' is-complete' : '') + '" data-match="' + m.id + '">' +
+    '<div class="score-card-head">' +
+      '<span class="court-badge">' + m.court + '</span>' +
+      '<span class="type-chip">' + m.type + '</span>' +
+      '<span class="score-time">' + m.time + '</span>' +
+      '<span class="state ' + st + '" data-state><i class="state-dot" aria-hidden="true"></i>' + stateLabel(st) + '</span>' +
+      '<button type="button" class="icon-btn" data-reset-match="' + m.id + '" aria-label="' + m.id + ' 경기 점수 초기화">' + icon('reset') + '</button>' +
+    '</div>' + rows + '</article>';
+}
+
+function renderRecord() {
+  $('#recordTabs').innerHTML = roundChips(state.recordRound, 'record');
+  const all = roundMatches(state.recordRound);
+  const filtered = (state.recordOnlyMine && state.club)
+    ? all.filter(function (m) { return m.a === state.club || m.b === state.club; })
+    : all;
+  const done = all.filter(function (m) { return isComplete(m.id); }).length;
+  $('#recordProgressText').textContent = done + '/' + all.length + ' 완료';
+  $('#recordProgressBar').style.width = (all.length ? Math.round((done / all.length) * 100) : 0) + '%';
+
+  const banner = $('#recordBanner');
+  if (state.recordOnlyMine && state.club) {
+    banner.hidden = false;
+    banner.innerHTML = '<span>' + state.club + ' 경기만 표시 중입니다.</span>' +
+      '<button type="button" data-show-all-record>전체 경기 보기</button>';
+  } else {
+    banner.hidden = true;
+  }
+
+  const toggle = $('#recordOnlyMine');
+  toggle.disabled = !state.club;
+  toggle.checked = !!state.club && state.recordOnlyMine;
+
+  $('#scoreGrid').innerHTML = filtered.length
+    ? filtered.map(scoreEntryCard).join('')
+    : '<div class="empty-state wide">' + icon('pencil','empty-icon') +
+      '<p>' + (state.club ? state.club + '의 이 라운드 경기가 없습니다. 다른 라운드를 선택하거나 전체 경기를 보세요.' : '이 라운드에 등록된 경기가 없습니다.') + '</p>' +
+      (state.club ? '<button type="button" class="btn btn-ghost btn-sm" data-show-all-record>전체 경기 보기</button>' : '') +
+      '</div>';
+}
+
+function formMarkup(form) {
+  if (!form.length) return '<span class="form-empty">—</span>';
+  return '<span class="form">' + form.map(function (r) {
+    const cls = r === 'W' ? 'w' : (r === 'D' ? 'd' : 'l');
+    const label = r === 'W' ? '승' : (r === 'D' ? '무' : '패');
+    return '<span class="f ' + cls + '" title="' + label + '">' + r + '</span>';
+  }).join('') + '</span>';
+}
+
+function renderStandings() {
+  const rows = computeStandings();
+  const mine = state.club;
+
+  $('#standingsBody').innerHTML = rows.map(function (r) {
+    const isMine = mine && r.club === mine;
+    return '<tr class="' + (r.rank <= 3 ? 'rank-' + r.rank : '') + (isMine ? ' is-mine-row' : '') + '">' +
+      '<td><span class="rank">' + r.rank + '</span></td>' +
+      '<td class="club-cell"><div class="club-line"><span class="team-name">' + r.club + '</span>' + (isMine ? '<span class="my-chip">내 팀</span>' : '') + '</div></td>' +
+      '<td>' + r.p + '</td><td>' + r.w + '</td><td>' + r.d + '</td><td>' + r.l + '</td>' +
+      '<td>' + r.gf + '</td><td>' + r.ga + '</td><td>' + formatGd(r.gd) + '</td>' +
+      '<td><span class="pts">' + r.pts + '</span></td>' +
+      '<td>' + formMarkup(r.form) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  $('#standingsCards').innerHTML = rows.map(function (r) {
+    const isMine = mine && r.club === mine;
+    return '<article class="standing-card ' + (r.rank <= 3 ? 'rank-' + r.rank : '') + (isMine ? ' is-mine' : '') + '">' +
+      '<span class="rank">' + r.rank + '</span>' +
+      '<div class="standing-main">' +
+        '<div class="standing-name"><span class="team-name">' + r.club + '</span>' + (isMine ? '<span class="my-chip">내 팀</span>' : '') + '</div>' +
+        '<span class="standing-meta">' + r.w + '승 ' + r.d + '무 ' + r.l + '패 · 득실 ' + formatGd(r.gd) + ' · 최근 ' + formMarkup(r.form) + '</span>' +
+      '</div>' +
+      '<div class="standing-side"><strong>' + r.pts + '</strong><span>승점</span></div>' +
+    '</article>';
+  }).join('');
+}
+
+function renderAdmin() {
+  const done = MATCHES.filter(function (m) { return isComplete(m.id); }).length;
+  const total = MATCHES.length;
+  $('#adminDone').textContent = String(done);
+  $('#adminPending').textContent = String(total - done);
+  $('#adminClubs').textContent = String(CLUBS.length);
+  $('#adminPct').textContent = Math.round((done / total) * 100) + '%';
+
+  $('#roundProgress').innerHTML = ROUNDS.map(function (r) {
+    const all = roundMatches(r.key);
+    const d = all.filter(function (m) { return isComplete(m.id); }).length;
+    const pct = all.length ? Math.round((d / all.length) * 100) : 0;
+    return '<div class="rp-row">' +
+      '<span class="rp-label">' + r.key + '</span>' +
+      '<div class="mini-bar"><i style="width:' + pct + '%"></i></div>' +
+      '<span class="rp-count">' + d + '/' + all.length + '</span>' +
+    '</div>';
+  }).join('');
+
+  $('#clubLinks').innerHTML = CLUBS.map(function (c) {
+    return '<div class="club-link-row">' +
+      '<div class="club-link-main"><span class="club-link-name">' + c + '</span><span class="club-link-url">?club=' + encodeURIComponent(c) + '</span></div>' +
+      '<button type="button" class="btn btn-sm" data-copy-club="' + c + '">링크 복사</button>' +
+    '</div>';
+  }).join('');
+}
+
+function renderNav() {
+  $('#sideNav').innerHTML = NAV.map(function (n) {
+    return '<a class="nav-item nav-link" href="#' + n.route + '" data-route="' + n.route + '">' + icon(n.icon, 'nav-icon') + '<span>' + n.label + '</span></a>';
+  }).join('');
+  $('#bottomNav').innerHTML = NAV.map(function (n) {
+    return '<a class="bottom-item nav-link" href="#' + n.route + '" data-route="' + n.route + '">' + icon(n.icon, 'nav-icon') + '<span>' + n.label + '</span></a>';
+  }).join('');
+}
+
+function renderTeamSelect() {
+  const sel = $('#teamSelect');
+  if (!sel.options.length) {
+    sel.innerHTML = '<option value="">전체 팀</option>' + CLUBS.map(function (c) {
+      return '<option value="' + c + '">' + c + '</option>';
+    }).join('');
+  }
+  sel.value = state.club || '';
+}
+
+function renderAll() {
+  renderTeamSelect();
+  renderHome();
+  renderSchedule();
+  renderRecord();
+  renderStandings();
+  renderAdmin();
+}
+
+function currentRoute() {
+  const h = location.hash.replace('#', '');
+  return ROUTES.indexOf(h) !== -1 ? h : 'home';
+}
+
+function applyRoute(route, moveFocus) {
+  $$('.view').forEach(function (v) {
+    v.hidden = v.id !== 'view-' + route;
+  });
+  $$('.nav-link').forEach(function (a) {
+    if (a.dataset.route === route) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
+  $('#pageTitle').textContent = ROUTE_TITLES[route] || '홈';
+  document.title = (ROUTE_TITLES[route] || '홈') + ' · 제2회 용인시 단체 교류전';
+  window.scrollTo(0, 0);
+  if (moveFocus) {
+    const heading = $('#view-' + route + ' h1');
+    if (heading) heading.focus({ preventScroll: true });
+  }
+}
+
+function navigate(route) {
+  if (location.hash === '#' + route) applyRoute(route, true);
+  else location.hash = route;
+}
+
+function setScore(id, side, raw) {
+  let v;
+  if (raw === '' || raw === null || raw === undefined) {
+    v = null;
+  } else {
+    const n = parseInt(raw, 10);
+    if (Number.isNaN(n)) return;
+    v = Math.min(9, Math.max(0, n));
+  }
+
+  const s = state.scores[id] ? { a: state.scores[id].a, b: state.scores[id].b } : { a: null, b: null };
+  s[side] = v;
+  if (s.a === null && s.b === null) delete state.scores[id];
+  else state.scores[id] = s;
+
+  saveScores();
+  syncScoreCard(id);
+  renderHome();
+  renderSchedule();
+  renderStandings();
+  renderAdmin();
+  toast('스코어를 저장했습니다');
+}
+
+function syncScoreCard(id) {
+  const card = $$('.score-card').find(function (c) { return c.dataset.match === id; });
+  if (!card) return;
+  const s = matchScore(id);
+  const st = matchStatus(id);
+  const w = winnerOf(id);
+
+  $$('input[data-score-input]', card).forEach(function (inp) {
+    const v = s[inp.dataset.side];
+    inp.value = (v === null || v === undefined) ? '' : String(v);
+  });
+
+  const stateEl = $('[data-state]', card);
+  if (stateEl) {
+    stateEl.className = 'state ' + st;
+    stateEl.innerHTML = '<i class="state-dot" aria-hidden="true"></i>' + stateLabel(st);
+  }
+  card.classList.toggle('is-complete', st === 'done');
+
+  $$('.entry-row', card).forEach(function (row) {
+    const win = w === row.dataset.teamRow;
+    row.classList.toggle('is-winner', win);
+    const flag = $('.winner-flag', row);
+    if (flag) flag.hidden = !win;
+  });
+}
+
+let toastTimer = null;
+function toast(message) {
+  const el = $('#toast');
+  el.textContent = message;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { el.classList.remove('show'); }, 1900);
+}
+
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).then(function () { return true; }).catch(function () { return legacyCopy(text); });
+  }
+  return Promise.resolve(legacyCopy(text));
+}
+
+function legacyCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '-200px';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+  ta.remove();
+  return ok;
+}
+
+function clubLink(club) {
+  const base = location.href.split('#')[0].split('?')[0];
+  return base + '?club=' + encodeURIComponent(club);
+}
+
+function confirmAction(opts) {
+  const dlg = $('#confirmDialog');
+  $('#confirmTitle').textContent = opts.title;
+  $('#confirmBody').textContent = opts.body;
+  const ok = $('#confirmOk');
+  ok.textContent = opts.okLabel || '확인';
+  ok.className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-lime');
+  dlg.returnValue = 'cancel';
+  dlg.showModal();
+  return new Promise(function (resolve) {
+    dlg.addEventListener('close', function () {
+      resolve(dlg.returnValue === 'confirm');
+    }, { once: true });
+  });
+}
+
+function exportScores() {
+  const data = JSON.stringify(state.scores, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'yongin-scores.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  toast('점수 파일을 내보냈습니다');
+}
+
+function normalizeImport(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  const out = {};
+  Object.keys(input).forEach(function (id) {
+    if (!MATCHES.some(function (m) { return m.id === id; })) return;
+    const v = input[id];
+    if (!v || typeof v !== 'object') return;
+    const a = normScore(v.a);
+    const b = normScore(v.b);
+    if (a !== null || b !== null) out[id] = { a: a, b: b };
+  });
+  return out;
+}
+
+function showFocusTeam() {
+  const sel = $('#teamSelect');
+  sel.focus();
+}
+
+function openRecord(round, matchId) {
+  if (round) state.recordRound = round;
+  renderRecord();
+  navigate('record');
+  if (matchId) {
+    setTimeout(function () {
+      const card = $$('.score-card').find(function (c) { return c.dataset.match === matchId; });
+      if (!card) return;
+      card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      card.classList.add('flash');
+      setTimeout(function () { card.classList.remove('flash'); }, 1500);
+    }, 120);
+  }
+}
+
+document.addEventListener('click', function (e) {
+  const routeBtn = e.target.closest('[data-route]');
+  if (routeBtn) {
+    e.preventDefault();
+    navigate(routeBtn.dataset.route);
+    return;
+  }
+
+  const openBtn = e.target.closest('[data-open-record]');
+  if (openBtn) {
+    e.preventDefault();
+    openRecord(openBtn.dataset.openRecord, openBtn.dataset.matchId || '');
+    return;
+  }
+
+  const roundBtn = e.target.closest('[data-round-for]');
+  if (roundBtn) {
+    const target = roundBtn.dataset.roundFor;
+    const round = roundBtn.dataset.round;
+    if (target === 'home') { state.homeRound = round; renderHome(); }
+    if (target === 'schedule') { state.scheduleRound = round; renderSchedule(); }
+    if (target === 'record') { state.recordRound = round; renderRecord(); }
+    return;
+  }
+
+  const stepBtn = e.target.closest('[data-step]');
+  if (stepBtn) {
+    const id = stepBtn.dataset.id;
+    const side = stepBtn.dataset.side;
+    const delta = parseInt(stepBtn.dataset.step, 10);
+    const current = matchScore(id)[side];
+    const base = (current === null || current === undefined) ? 0 : current;
+    setScore(id, side, String(Math.min(9, Math.max(0, base + delta))));
+    return;
+  }
+
+  const resetBtn = e.target.closest('[data-reset-match]');
+  if (resetBtn) {
+    const id = resetBtn.dataset.resetMatch;
+    if (!state.scores[id]) { toast('초기화할 점수가 없습니다'); return; }
+    delete state.scores[id];
+    saveScores();
+    syncScoreCard(id);
+    renderHome();
+    renderSchedule();
+    renderStandings();
+    renderAdmin();
+    toast(id + ' 경기 점수를 초기화했습니다');
+    return;
+  }
+
+  const allBtn = e.target.closest('[data-show-all-record]');
+  if (allBtn) {
+    state.recordOnlyMine = false;
+    renderRecord();
+    return;
+  }
+
+  const teamFocus = e.target.closest('[data-focus-team]');
+  if (teamFocus) { showFocusTeam(); return; }
+
+  const copyBtn = e.target.closest('[data-copy-club]');
+  if (copyBtn) {
+    const club = copyBtn.dataset.copyClub;
+    copyText(clubLink(club)).then(function (ok) {
+      if (ok) toast(club + ' 링크를 복사했습니다');
+      else toast('복사하지 못했습니다. 주소를 직접 복사해 주세요');
+    });
+    return;
+  }
+});
+
+document.addEventListener('change', function (e) {
+  const input = e.target.closest('[data-score-input]');
+  if (input) {
+    setScore(input.dataset.id, input.dataset.side, input.value);
+  }
+});
+
+document.addEventListener('keydown', function (e) {
+  const input = e.target.closest('[data-score-input]');
+  if (input && e.key === 'Enter') {
+    e.preventDefault();
+    input.blur();
+  }
+});
+
+$('#teamSelect').addEventListener('change', function (e) {
+  state.club = e.target.value;
+  if (state.club) localStorage.setItem(CLUB_KEY, state.club);
+  else localStorage.removeItem(CLUB_KEY);
+  if (!state.club) {
+    state.recordOnlyMine = false;
+    state.scheduleOnlyMine = false;
+  }
+  renderAll();
+  toast(state.club ? state.club + ' 기준으로 표시합니다' : '전체 팀을 표시합니다');
+});
+
+$('#scheduleOnlyMine').addEventListener('change', function (e) {
+  state.scheduleOnlyMine = e.target.checked;
+  renderSchedule();
+});
+
+$('#recordOnlyMine').addEventListener('change', function (e) {
+  state.recordOnlyMine = e.target.checked;
+  renderRecord();
+});
+
+$('#printBtn').addEventListener('click', function () { window.print(); });
+
+$('#rulesBtn').addEventListener('click', function () {
+  $('#rulesDialog').showModal();
+});
+
+$('#exportBtn').addEventListener('click', exportScores);
+
+$('#importBtn').addEventListener('click', function () {
+  $('#importFile').click();
+});
+
+$('#importFile').addEventListener('change', function (e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function () {
+    let parsed;
+    try { parsed = JSON.parse(String(reader.result)); }
+    catch (err) { toast('JSON 형식이 올바르지 않습니다'); e.target.value = ''; return; }
+    const clean = normalizeImport(parsed);
+    if (!clean) { toast('점수 데이터를 찾을 수 없습니다'); e.target.value = ''; return; }
+    const count = Object.keys(clean).length;
+    confirmAction({
+      title: '기록 가져오기',
+      body: '현재 기록을 덮어씁니다. 불러올 경기 수: ' + count + '경기. 계속할까요?',
+      okLabel: '덮어쓰기'
+    }).then(function (ok) {
+      if (ok) {
+        state.scores = clean;
+        saveScores();
+        renderAll();
+        toast('기록을 가져왔습니다');
+      }
+      e.target.value = '';
+    });
+  };
+  reader.readAsText(file);
+});
+
+$('#resetAll').addEventListener('click', function () {
+  const count = Object.keys(state.scores).length;
+  if (!count) { toast('초기화할 기록이 없습니다'); return; }
+  confirmAction({
+    title: '전체 기록 초기화',
+    body: count + '경기의 점수를 모두 지웁니다. 이 작업은 되돌릴 수 없습니다. 먼저 JSON으로 백업하는 것을 권장합니다.',
+    okLabel: '모두 지우기',
+    danger: true
+  }).then(function (ok) {
+    if (ok) {
+      state.scores = {};
+      saveScores();
+      renderAll();
+      toast('모든 점수를 초기화했습니다');
+    }
+  });
+});
+
+window.addEventListener('hashchange', function () {
+  applyRoute(currentRoute(), true);
+});
+
+(function init() {
+  if (urlClub) state.recordRound = firstIncompleteRoundFor(urlClub);
+  else state.recordRound = activeRound();
+  state.homeRound = activeRound();
+  state.scheduleRound = state.recordRound;
+
+  renderNav();
+  renderAll();
+
+  if (!location.hash) {
+    try { history.replaceState(null, '', '#home'); }
+    catch (err) { location.hash = 'home'; }
+  }
+  applyRoute(currentRoute(), false);
+})();
+</script>
+</body>
+</html>
